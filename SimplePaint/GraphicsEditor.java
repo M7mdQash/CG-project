@@ -1,3 +1,4 @@
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -95,7 +96,7 @@ public class GraphicsEditor {
         addToolButton(drawingToolsPanel, "Text", "text.png");
         addToolButton(drawingToolsPanel, "Undo", "undo.png");
         addToolButton(drawingToolsPanel, "Redo", "redo.png");
-
+        addToolButton(drawingToolsPanel, "Clear", "bin.png");
         frame.add(drawingToolsPanel, BorderLayout.WEST);
     }
 
@@ -131,7 +132,8 @@ public class GraphicsEditor {
             case "Eraser":
                 drawingPanel.setCurrentTool(DrawingPanel.Tool.ERASER);
                 break;
-            // Handle other tools
+            case "Clear":
+                clearDrawingPanel();
             default:
                 break;
         }
@@ -143,6 +145,17 @@ public class GraphicsEditor {
         animationPanel.add(createAnimationButton);
         frame.add(animationPanel, BorderLayout.SOUTH);
     }
+    private static void clearDrawingPanel() {
+        // Clear the drawing canvas by filling it with the background color
+        Graphics2D g = (Graphics2D) drawingPanel.getGraphics();
+        g.setColor(drawingPanel.getBackground());
+        g.fillRect(0, 0, drawingPanel.getWidth(), drawingPanel.getHeight());
+
+        // Clear the history
+        history.clear();
+        historyPointer = -1;
+    }
+
 
     static class DrawingPanel extends JPanel {
         private Tool currentTool = Tool.PEN;
