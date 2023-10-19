@@ -32,7 +32,7 @@ public class GraphicsEditor {
         createMenuBar(frame);
         createDrawingPanel(frame);
         createColorPalette(frame);
-        createShapesPanel(frame);
+        createShapesPanel();
         createDrawingToolsPanel(frame);
         createAnimationPanel(frame);
 
@@ -58,15 +58,15 @@ public class GraphicsEditor {
      * this area is for the shapes dialouge
      * ===========
      * */
-//    private static void showShapesPanel() {
-//        JPanel panel;
-//        if (panel == null) {
-//            panel = createShapesPanel();
-//        }
-//        JOptionPane.showMessageDialog(null, shapesPanel, "Shapes", JOptionPane.PLAIN_MESSAGE);
-//    }
+    private static void showShapesPanel() {
+        JPanel panel = null;
+        if (panel == null) {
+            panel = createShapesPanel();
+        }
+        JOptionPane.showMessageDialog(null, panel, "Shapes", JOptionPane.PLAIN_MESSAGE);
+    }
 
-    private static JPanel createShapesPanel(JFrame frame) {
+    private static JPanel createShapesPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout());
 
@@ -226,9 +226,9 @@ public class GraphicsEditor {
             case "Text":
                 openTextDialog(); // bug: one text apears and only one that moves on last press and afther writing
                 break;
-//            case "Shapes":
-//                createShapesPanel();
-//                break;
+            case "Shapes":
+                showShapesPanel();
+                break;
             default:
                 break;
         }
