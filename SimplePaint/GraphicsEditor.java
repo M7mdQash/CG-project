@@ -16,12 +16,44 @@ public class GraphicsEditor {
     private static DrawingPanel drawingPanel;
     private static List<BufferedImage> history = new ArrayList<>();
     private static int historyPointer = -1;
-    private Stack<Shape> Shapes;
+    private static BufferedImage currentImage;
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             createAndShowGUI();
         });
     }
+
+    //this code handels saving the actions of the user to undo and redo
+    private static void saveCurrentState() {
+        BufferedImage image = new BufferedImage(drawingPanel.getWidth(), drawingPanel.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = image.createGraphics();
+        drawingPanel.paint(g2d);
+        g2d.dispose();
+        updateHistory(image);
+    }
+
+    private static final int MAX_HISTORY_SIZE = 50;
+
+    private static void updateHistory(BufferedImage image) {
+        // If the pointer is not at the end of the list, remove all states after the pointer.
+        // This is done because when you draw something new after undoing, you can't redo to the previous states.
+        while (historyPointer < history.size() - 1) {
+            history.remove(history.size() - 1);
+        }
+
+        // Add the new state to the end of the list.
+        history.add(image);
+
+        // Move the pointer to the new state.
+        historyPointer++;
+
+        // Optional: If history gets too big, remove the earliest state to save memory.
+        if (history.size() > MAX_HISTORY_SIZE) {
+            history.remove(0);
+            historyPointer--;  // adjust the pointer due to removal at the start.
+        }
+    }
+
 
     private static void createAndShowGUI() {
         JFrame frame = new JFrame("Graphics Editor");
@@ -51,6 +83,8 @@ public class GraphicsEditor {
     private static void createDrawingPanel(JFrame frame) {
         drawingPanel = new DrawingPanel();
         drawingPanel.setBackground(Color.WHITE);
+
+
         frame.add(drawingPanel, BorderLayout.CENTER);
     }
 
@@ -59,7 +93,7 @@ public class GraphicsEditor {
      * ===========
      * */
     private static void showShapesPanel() {
-        JPanel panel = null;
+        JPanel panel = createShapesPanel();
         if (panel == null) {
             panel = createShapesPanel();
         }
@@ -93,40 +127,56 @@ public class GraphicsEditor {
         JButton drawButton = new JButton("Draw");
         panel.add(drawButton);
 
+        JRadioButton fillButton = new JRadioButton("Fill");
+        panel.add(fillButton);
+
+
         drawButton.addActionListener(e -> {
 
             String selectedShape = shapeComboBox.getSelectedItem().toString();
+
             int x = Integer.parseInt(xTextField.getText());
             int y = Integer.parseInt(yTextField.getText());
             int size = Integer.parseInt(sizeTextField.getText());
-
-            drawShape(selectedShape, x, y, size);
+            boolean fill = fillButton.isSelected();
+            drawShape(selectedShape, x, y, size,fill);
         });
 
         return panel;
     }
 
-    private static void drawShape(String shape, int x, int y, int size) {
+
+    //this method creates shapes in the image
+    private static void drawShape(String shape, int x, int y, int size, boolean fill) {
         Graphics2D g = (Graphics2D) drawingPanel.getGraphics();
         g.setColor(currentColor);
         g.setStroke(new BasicStroke(currentSize));
 
         if (shape.equals("Rectangle")) {
-            g.drawRect(x, y, size, size);
+            if (fill) g.fillRect(x, y, size, size); // Fill rectangle
+            else g.drawRect(x, y, size, size);
+            saveCurrentState();
         } else if (shape.equals("Circle")) {
-            g.drawOval(x, y, size, size);
+            if (fill) g.fillOval(x, y, size, size); // Fill circle
+            else g.drawOval(x, y, size, size);
+            saveCurrentState();
         } else if (shape.equals("Triangle")) {
             int[] xPoints = {x, x + size / 2, x + size};
             int[] yPoints = {y + size, y, y + size};
-            g.drawPolygon(xPoints, yPoints, 3);
+            if (fill) g.fillPolygon(xPoints, yPoints, 3); // Fill triangle
+            else g.drawPolygon(xPoints, yPoints, 3);
+            saveCurrentState();
         } else if (shape.equals("Polygon")) {
-            // Define the polygon points here
             int[] xPoints = {x, x + size, x + size / 2};
             int[] yPoints = {y, y, y + size};
-            g.drawPolygon(xPoints, yPoints, 3);
+            if (fill) g.fillPolygon(xPoints, yPoints, 3); // Fill polygon
+            else g.drawPolygon(xPoints, yPoints, 3);
+            saveCurrentState();
         } else if (shape.equals("Line")) {
             g.drawLine(x, y, x + size, y + size);
+            saveCurrentState();
         }
+
     }
 
     private static void createColorPalette(JFrame frame) {
@@ -229,6 +279,23 @@ public class GraphicsEditor {
             case "Shapes":
                 showShapesPanel();
                 break;
+            case "Fill":
+                break;
+            case "Undo":
+                if (historyPointer > 0) {
+                    historyPointer--;
+                    currentImage = history.get(historyPointer);
+                    drawingPanel.repaint();
+                }
+                break;
+            case "Redo":
+                if (historyPointer < history.size() - 1) {
+                    historyPointer++;
+                    currentImage = history.get(historyPointer);
+                    drawingPanel.repaint();
+                }
+                break;
+
             default:
                 break;
         }
@@ -248,7 +315,9 @@ public class GraphicsEditor {
             Font selectedFont = textDialog.getFont();
             String selectedText = textDialog.getText();
             drawingPanel.setTextProperties(selectedFont, selectedText);
+            saveCurrentState();
         }
+
     }
     private static void createAnimationPanel(JFrame frame) {
         JPanel animationPanel = new JPanel();
@@ -265,11 +334,13 @@ public class GraphicsEditor {
         // Clear the history
         history.clear();
         historyPointer = -1;
+
     }
+    //method for undo and redo
 
 
     static class DrawingPanel extends JPanel {
-        private Tool currentTool = Tool.PEN;
+        public static Tool currentTool = Tool.PEN;
         private int lastX, lastY;
 
         public DrawingPanel() {
@@ -278,6 +349,11 @@ public class GraphicsEditor {
                 public void mousePressed(MouseEvent e) {
                     lastX = e.getX();
                     lastY = e.getY();
+
+                }
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    saveCurrentState();
                 }
             });
 
@@ -289,8 +365,12 @@ public class GraphicsEditor {
                     Graphics2D g = (Graphics2D) getGraphics();
                     g.setColor(currentColor);
                     g.setStroke(new BasicStroke(currentSize));
+
+                    //========this code snippet is the code for the pen========
                     if (currentTool == Tool.PEN) {
                         g.drawLine(lastX, lastY, x, y);
+
+                    //========and this is the code for the eraser tool=========
                     } else if (currentTool == Tool.ERASER) {
                         g.setColor(getBackground());
                         g.setStroke(new BasicStroke(5.0f));
@@ -298,7 +378,10 @@ public class GraphicsEditor {
                     }
                     lastX = x;
                     lastY = y;
+
                 }
+
+
             });
         }
 
@@ -320,6 +403,10 @@ public class GraphicsEditor {
             g.setFont(textFont);
             g.setColor(currentColor);
             g.drawString(text,lastX , lastY);
+            if (historyPointer >= 0) {
+                BufferedImage image = history.get(historyPointer);
+                g.drawImage(image, 0, 0, this);
+            }
         }
 
         //==============end for methods of text editor
