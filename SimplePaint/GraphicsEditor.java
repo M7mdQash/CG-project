@@ -73,7 +73,7 @@ public class GraphicsEditor {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1280, 760);
         frame.setLayout(new BorderLayout());
-
+        frame.setResizable(false);
         createMenuBar(frame);
         createDrawingPanel(frame);
         createColorPalette(frame);
@@ -149,6 +149,10 @@ public class GraphicsEditor {
         JOptionPane.showMessageDialog(null, panel, "Shapes", JOptionPane.PLAIN_MESSAGE);
     }
 
+    //code from faris
+
+
+    //code from faris
     private static JPanel createShapesPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout());
@@ -248,7 +252,7 @@ public class GraphicsEditor {
                 int size = Integer.parseInt(sizeTextField.getText());
                 boolean fill = fillButton.isSelected();
 
-                rotateShape(selectedShape,angle,size,x,y,fill);
+                rotateShape(selectedShape,x,y,size,fill);
 
             }
         });
@@ -334,10 +338,37 @@ private static void scaleShape(String shape, int x, int y, int size, boolean fil
     }
 
 }
-    public static void rotateShape(String shape,double angle , int size , int x ,int y,boolean fill) {
+    private static void rotateShape(String shape, int x, int y, int size, boolean fill) {
+        double angle = 45;
+        Graphics2D g = (Graphics2D) drawingPanel.getGraphics();
+        g.setColor(currentColor);
+        g.setStroke(new BasicStroke(currentSize));
+        //the scaling is set to 2 for the X and 1.2 for the Y
+        AffineTransform mover = new AffineTransform();
+        mover.setToRotation(Math.toRadians(angle));
+        g.setTransform(mover);
 
-        rotationAngle += (int)angle;
-        drawShape( shape,x, y, rotationAngle,fill);
+        if (shape.equals("Rectangle")) {
+            if (fill) g.fillRect(x, y, size, size); // Fill rectangle
+            else g.drawRect(x, y, size, size);
+        } else if (shape.equals("Circle")) {
+            if (fill) g.fillOval(x, y, size, size); // Fill circle
+            else g.drawOval(x, y, size, size);
+        } else if (shape.equals("Triangle")) {
+            int[] xPoints = {x, x + size / 2, x + size};
+            int[] yPoints = {y + size, y, y + size};
+            if (fill) g.fillPolygon(xPoints, yPoints, 3); // Fill triangle
+            else g.drawPolygon(xPoints, yPoints, 3);
+
+        } else if (shape.equals("Polygon")) {
+            int[] xPoints = {x, x + size, x + size / 2};
+            int[] yPoints = {y, y, y + size};
+            if (fill) g.fillPolygon(xPoints, yPoints, 3); // Fill polygon
+            else g.drawPolygon(xPoints, yPoints, 3);
+        } else if (shape.equals("Line")) {
+            g.drawLine(x, y, x + size, y + size);
+        }
+
     }
 
 //    public static void flipShape(String shape,int x ,int y ,int size,boolean fill) {
@@ -352,7 +383,7 @@ private static void scaleShape(String shape, int x, int y, int size, boolean fil
         g.setColor(currentColor);
         g.setStroke(new BasicStroke(currentSize));
         AffineTransform mover = new AffineTransform();
-        mover.translate(0, y * 2);
+        mover.scale(1, -1);
         g.setTransform(mover);
 
         if (shape.equals("Rectangle")) {
@@ -378,12 +409,11 @@ private static void scaleShape(String shape, int x, int y, int size, boolean fil
 
     }
     private static void moveShape(String shape, int x, int y, int size, boolean fill) {
-        int moX = 10 ,  moY = 10;
         Graphics2D g = (Graphics2D) drawingPanel.getGraphics();
         g.setColor(currentColor);
         g.setStroke(new BasicStroke(currentSize));
         AffineTransform mover = new AffineTransform();
-        mover.translate(moX,moY);
+        mover.translate(size * 2,size);
         g.setTransform(mover);
 
         if (shape.equals("Rectangle")) {
